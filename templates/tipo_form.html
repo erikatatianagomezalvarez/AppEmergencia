@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if tipo %}Editar{% else %}Nuevo{% endif %} Tipo</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      label { display: block; margin-top: 8px; }
+      input, textarea, select { width: 400px; padding: 6px; }
+      textarea { height: 120px; }
+      .actions { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>{% if tipo %}Editar{% else %}Nuevo{% endif %} Tipo de Emergencia</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if tipo %}
+      <form method="post" action="/tipos/editar/{{ tipo.idTipoEmergencia }}">
+    {% else %}
+      <form method="post" action="/tipos/nuevo">
+    {% endif %}
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" required value="{{ tipo.nombreTipoEmergencia if tipo }}">
+
+      <label for="descripcion">Descripción</label>
+      <textarea id="descripcion" name="descripcion">{{ tipo.descripcionTipoEmergencia if tipo }}</textarea>
+
+      <label for="nivel">Nivel de prioridad</label>
+      <select id="nivel" name="nivel" required>
+        {% set sel = tipo.nivelPrioridadTipoEmergencia_3 if tipo else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="baja" {{ 'selected' if sel=='baja' else '' }}>baja</option>
+        <option value="media" {{ 'selected' if sel=='media' else '' }}>media</option>
+        <option value="alta" {{ 'selected' if sel=='alta' else '' }}>alta</option>
+        <option value="critica" {{ 'selected' if sel=='critica' else '' }}>critica</option>
+      </select>
+
+      <label for="estado">Estado</label>
+      <select id="estado" name="estado" required>
+        {% set s = tipo.estadoTipoEmergencia_4 if tipo else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="activo" {{ 'selected' if s=='activo' else '' }}>activo</option>
+        <option value="inactivo" {{ 'selected' if s=='inactivo' else '' }}>inactivo</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <a href="/tipos">Cancelar</a>
+      </div>
+    </form>
+
+  </body>
+</html>
