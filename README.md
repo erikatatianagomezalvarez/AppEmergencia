@@ -54,8 +54,20 @@ $env:DB_NAME='sistema_emergencias'
 $env:FLASK_SECRET='mi-secreto-dev'
 ```
 4. Ejecutar la aplicación:
+
+PowerShell (recomendado — evita problemas con `Activate.ps1`):
 ```powershell
-python .\app.py
+.\run.ps1
+```
+
+Windows CMD:
+```bat
+run.bat
+```
+
+Si prefieres usar `python` directamente asegúrate de usar el Python del venv:
+```powershell
+.\.venv\Scripts\python.exe .\app.py
 ```
 5. Abrir en el navegador:
 
@@ -69,7 +81,17 @@ pip freeze > requirements.txt
 
 Esquema de tablas (ejemplo)
 ---------------------------
-Estos son ejemplos de DDL que funcionan con el código actual. Ajusta tipos/constraints según tu esquema real.
+**IMPORTANTE:** Para que las claves foráneas funcionen, crea las tablas en **este orden**:
+1. Primero: `tbusuario` (tabla padre)
+2. Segundo: `tbtipoemergencia` (tabla padre)
+3. Tercero: `tbcontactoemergencia` y `tbemergencia` (tablas hijo, que referencian a las padre)
+
+**Opción recomendada:** Ejecuta el archivo `schema.sql` incluido en el proyecto:
+```bash
+mysql -h localhost -u root -p sistema_emergencias < schema.sql
+```
+
+O copia y ejecuta manualmente en MySQL:
 
 -- Tabla de usuarios (ejemplo)
 ```sql
@@ -98,6 +120,29 @@ CREATE TABLE tbtipoemergencia (
 );
 ```
 
+-- Tabla emergencias (CRUD completo implementado)
+```sql
+CREATE TABLE tbemergencia (
+  idEmergencia INT AUTO_INCREMENT PRIMARY KEY,
+  tbUsuario_idUsuario INT NOT NULL,
+  tbTipoEmergencia_idTipoEmergencia INT NOT NULL,
+  codigoEmergencia INT,
+  fechaHoraEmergencia DATETIME,
+  tipoEmergencia INT,
+  estadoEmergencia ENUM('reportada','en_proceso','atendida','cerrada'),
+  ubicacionEmergencia VARCHAR(300),
+  latitudEmergencia DECIMAL(11,8),
+  longitudEmergencia DECIMAL(11,8),
+  descripcionEmergencia TEXT,
+  prioridadEmergencia ENUM('baja','media','alta','critica'),
+  idusuarioreportaEmergencia INT,
+  fechaCierreEmergencia DATETIME,
+  observacionesEmergencia TEXT,
+  FOREIGN KEY (tbUsuario_idUsuario) REFERENCES tbusuario(idUsuario) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (tbTipoEmergencia_idTipoEmergencia) REFERENCES tbtipoemergencia(idTipoEmergencia) ON DELETE CASCADE ON UPDATE CASCADE
+);
+```
+
 Consideraciones técnicas y seguridad
 ------------------------------------
 - No expongas credenciales en código: usa variables de entorno o un gestor de secretos.
@@ -122,6 +167,9 @@ Endpoints disponibles
   - `GET /usuarios` — lista usuarios.
   - `GET /usuarios/nuevo` — formulario nuevo usuario.
   - `POST /usuarios/nuevo` — crear usuario.
+  - `GET /usuarios/editar/<id>` — formulario editar.
+  - `POST /usuarios/editar/<id>` — actualizar.
+  - `POST /usuarios/eliminar/<id>` — eliminar.
 - Tipos de emergencia
   - `GET /tipos` — lista tipos.
   - `GET /tipos/nuevo` — formulario nuevo tipo.
@@ -129,6 +177,43 @@ Endpoints disponibles
   - `GET /tipos/editar/<id>` — formulario editar.
   - `POST /tipos/editar/<id>` — actualizar.
   - `POST /tipos/eliminar/<id>` — eliminar.
+- Servicios de emergencia
+  - `GET /servicios` — lista servicios.
+  - `GET /servicios/nuevo` — formulario nuevo servicio.
+  - `POST /servicios/nuevo` — crear servicio.
+  - `GET /servicios/editar/<id>` — formulario editar.
+  - `POST /servicios/editar/<id>` — actualizar.
+  - `POST /servicios/eliminar/<id>` — eliminar.
+- Contactos de emergencia
+  - `GET /contactos` — lista contactos.
+  - `GET /contactos/nuevo` — formulario nuevo contacto.
+  - `POST /contactos/nuevo` — crear contacto.
+  - `GET /contactos/editar/<id>` — formulario editar.
+  - `POST /contactos/editar/<id>` — actualizar.
+  - `POST /contactos/eliminar/<id>` — eliminar.
+- Emergencias
+  - `GET /emergencias` — lista emergencias.
+  - `GET /emergencias/nuevo` — formulario nueva emergencia.
+  - `POST /emergencias/nuevo` — crear emergencia.
+  - `GET /emergencias/editar/<id>` — formulario editar.
+  - `POST /emergencias/editar/<id>` — actualizar.
+  - `POST /emergencias/eliminar/<id>` — eliminar.
+- Historial de Estados de Emergencias
+  - `GET /historialestados` — lista historial.
+  - `GET /historialestados/nuevo` — formulario nuevo registro.
+  - `POST /historialestados/nuevo` — crear registro.
+  - `GET /historialestados/editar/<id>` — formulario editar.
+  - `POST /historialestados/editar/<id>` — actualizar.
+  - `POST /historialestados/eliminar/<id>` — eliminar.
+- Despachos
+  - `GET /despacho` — lista despachos.
+  - `GET /despacho/nuevo` — formulario nuevo despacho.
+  - `POST /despacho/nuevo` — crear despacho.
+  - `GET /despacho/editar/<id>` — formulario editar.
+  - `POST /despacho/editar/<id>` — actualizar.
+  - `POST /despacho/eliminar/<id>` — eliminar.
+- Admin
+  - `GET /admin` — panel central con enlaces a todos los CRUDs.
 
 Próximos pasos recomendados
 ---------------------------

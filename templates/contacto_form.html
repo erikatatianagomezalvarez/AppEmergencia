@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if contacto %}Editar{% else %}Nuevo{% endif %} Contacto</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      label { display: block; margin-top: 8px; }
+      input, textarea, select { width: 400px; padding: 6px; }
+      textarea { height: 80px; }
+      .actions { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>{% if contacto %}Editar{% else %}Nuevo{% endif %} Contacto de Emergencia</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if contacto %}
+      <form method="post" action="/contactos/editar/{{ contacto.idContactoEmergencia }}">
+    {% else %}
+      <form method="post" action="/contactos/nuevo">
+    {% endif %}
+
+      <label for="tipo_id">Tipo de Emergencia</label>
+      <select id="tipo_id" name="tipo_id" required>
+        {% set sel_tipo_id = contacto.tbTipoEmergencia_idTipoEmergencia if contacto else '' %}
+        <option value="">--Seleccione--</option>
+        {% for tipo in tipos %}
+          <option value="{{ tipo.idTipoEmergencia }}" {{ 'selected' if sel_tipo_id == tipo.idTipoEmergencia else '' }}>
+            {{ tipo.nombreTipoEmergencia }} (ID: {{ tipo.idTipoEmergencia }})
+          </option>
+        {% endfor %}
+      </select>
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" required value="{{ contacto.nombreContactoEmergencia if contacto }}">
+
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" name="telefono" value="{{ contacto.telefonoContactoEmergencia if contacto }}">
+
+      <label for="tipo">Tipo de Contacto</label>
+      <select id="tipo" name="tipo" required>
+        {% set sel_tipo = contacto.tipoContactoEmergencia if contacto else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="bomberos" {{ 'selected' if sel_tipo=='bomberos' else '' }}>bomberos</option>
+        <option value="policia" {{ 'selected' if sel_tipo=='policia' else '' }}>policia</option>
+        <option value="ambulancia" {{ 'selected' if sel_tipo=='ambulancia' else '' }}>ambulancia</option>
+        <option value="cruz_roja" {{ 'selected' if sel_tipo=='cruz_roja' else '' }}>cruz_roja</option>
+        <option value="defensa_civil" {{ 'selected' if sel_tipo=='defensa_civil' else '' }}>defensa_civil</option>
+      </select>
+
+      <label for="descripcion">Descripción</label>
+      <textarea id="descripcion" name="descripcion">{{ contacto.descripcionContactoEmergencia if contacto }}</textarea>
+
+      <label for="estado">Estado</label>
+      <select id="estado" name="estado" required>
+        {% set sel_estado = contacto.estadoContactoEmergencia if contacto else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="activo" {{ 'selected' if sel_estado=='activo' else '' }}>activo</option>
+        <option value="inactivo" {{ 'selected' if sel_estado=='inactivo' else '' }}>inactivo</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <a href="/contactos">Cancelar</a>
+      </div>
+    </form>
+
+  </body>
+</html>

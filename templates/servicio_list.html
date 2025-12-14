@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Servicios de Emergencia</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #ddd; padding: 8px; }
+      th { background: #f4f4f4; }
+      .actions { margin-bottom: 12px; }
+      form { display: inline; }
+    </style>
+  </head>
+  <body>
+    <h1>Servicios de Emergencia</h1>
+
+    <div class="actions">
+      <a href="/servicios/nuevo">Nuevo servicio</a> | <a href="/admin">Admin</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Teléfono</th>
+          <th>Disponibilidad</th>
+          <th>Dirección</th>
+          <th>Capacidad</th>
+          <th>Horario</th>
+          <th>Especialidad</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servicios %}
+        <tr>
+          <td>{{ s.idServicioEmergencia }}</td>
+          <td>{{ s.nombreServicioEmergencia }}</td>
+          <td>{{ s.tipoServicioEmergencia }}</td>
+          <td>{{ s.telefonoServicioEmergencia }}</td>
+          <td>{{ s.disponibilidadServicioEmergencia }}</td>
+          <td>{{ s.direccionBaseServicioEmergencia }}</td>
+          <td>{{ s.capacidadAtencionServicioEmergencia }}</td>
+          <td>{{ s.horarioServicioEmergencia }}</td>
+          <td>{{ s.especialidadServicioEmergencia }}</td>
+          <td>{{ s.estadoServicioEmergencia }}</td>
+          <td>
+            <a href="/servicios/editar/{{ s.idServicioEmergencia }}">Editar</a>
+            <form method="post" action="/servicios/eliminar/{{ s.idServicioEmergencia }}" onsubmit="return confirm('Eliminar este servicio?');">
+              <button type="submit">Eliminar</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11">No hay servicios.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+  </body>
+</html>

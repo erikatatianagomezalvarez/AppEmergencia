@@ -98,20 +98,17 @@ def insert_user(name, email, telefono, **kwargs):
         (cedulaUsuario, nombresApellidosUsuario, telefonoUsuario, contactoEmergenciaUsuario, tipoUsuario, direccionUsuario, emailUsuario, fechaRegistroUsuario, estadoUsuario)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
-
         cedula = kwargs.get('cedula', '')
         contacto = kwargs.get('contacto', '')
-        tipo = kwargs.get('tipo', 'Paciente')
+        tipo = kwargs.get('tipo', '')
         direccion = kwargs.get('direccion', '')
-        fecha = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        estado = kwargs.get('estado', 'Activo')
+        estado = kwargs.get('estado', 'activo')
+        fecha = kwargs.get('fecha', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-        values = (cedula, name, telefono, contacto, tipo, direccion, email, fecha, estado)
-
-        cursor.execute(insert_sql, values)
+        cursor.execute(insert_sql, (cedula, name, telefono, contacto, tipo, direccion, email, fecha, estado))
         conn.commit()
         return cursor.lastrowid
-    except Error as e:
+    except Error:
         if conn:
             conn.rollback()
         raise
@@ -122,38 +119,14 @@ def insert_user(name, email, telefono, **kwargs):
             conn.close()
 
 
-def get_all_tipoemergencia():
-    """Devuelve todos los registros de `tbtipoemergencia` como lista de dicts."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idTipoEmergencia, nombreTipoEmergencia, descripcionTipoEmergencia, nivelPrioridadTipoEmergencia_3, estadoTipoEmergencia_4 FROM tbtipoemergencia ORDER BY idTipoEmergencia"
-        )
-        rows = cursor.fetchall()
-        return rows
-    except Error:
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
 def get_user(user_id):
-    """Devuelve un usuario por id como diccionario o None."""
+    """Devuelve un usuario por id o None si no existe."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idUsuario, cedulaUsuario, nombresApellidosUsuario, telefonoUsuario, contactoEmergenciaUsuario, tipoUsuario, direccionUsuario, emailUsuario, fechaRegistroUsuario, estadoUsuario FROM tbusuario WHERE idUsuario = %s",
-            (user_id,)
-        )
+        cursor.execute("SELECT * FROM tbusuario WHERE idUsuario = %s", (user_id,))
         return cursor.fetchone()
     except Error:
         raise
@@ -164,19 +137,21 @@ def get_user(user_id):
             conn.close()
 
 
-def update_user(user_id, cedula, nombres, telefono, contacto, tipo, direccion, email, fecha, estado):
-    """Actualiza un usuario. Devuelve filas afectadas."""
+def update_user(user_id, cedula, nombre, telefono, contacto, tipo, direccion, email, fecha, estado):
+    """Actualiza un usuario."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor()
         sql = """
-        UPDATE tbusuario
-        SET cedulaUsuario=%s, nombresApellidosUsuario=%s, telefonoUsuario=%s, contactoEmergenciaUsuario=%s, tipoUsuario=%s, direccionUsuario=%s, emailUsuario=%s, fechaRegistroUsuario=%s, estadoUsuario=%s
+        UPDATE tbusuario SET
+        cedulaUsuario=%s, nombresApellidosUsuario=%s, telefonoUsuario=%s,
+        contactoEmergenciaUsuario=%s, tipoUsuario=%s, direccionUsuario=%s,
+        emailUsuario=%s, fechaRegistroUsuario=%s, estadoUsuario=%s
         WHERE idUsuario=%s
         """
-        cursor.execute(sql, (cedula, nombres, telefono, contacto, tipo, direccion, email, fecha, estado, user_id))
+        cursor.execute(sql, (cedula, nombre, telefono, contacto, tipo, direccion, email, fecha, estado, user_id))
         conn.commit()
         return cursor.rowcount
     except Error:
@@ -191,7 +166,7 @@ def update_user(user_id, cedula, nombres, telefono, contacto, tipo, direccion, e
 
 
 def delete_user(user_id):
-    """Elimina un usuario. Devuelve filas afectadas."""
+    """Elimina un usuario."""
     conn = None
     cursor = None
     try:
@@ -211,17 +186,32 @@ def delete_user(user_id):
             conn.close()
 
 
-def get_tipoemergencia(tipo_id):
-    """Devuelve un registro por `idTipoEmergencia` como diccionario o None."""
+def get_all_tipoemergencia():
+    """Devuelve todos los tipos de emergencia."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idTipoEmergencia, nombreTipoEmergencia, descripcionTipoEmergencia, nivelPrioridadTipoEmergencia_3, estadoTipoEmergencia_4 FROM tbtipoemergencia WHERE idTipoEmergencia = %s",
-            (tipo_id,)
-        )
+        cursor.execute("SELECT * FROM tbtipoemergencia")
+        return cursor.fetchall()
+    except Error:
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+def get_tipoemergencia(tipo_id):
+    """Devuelve un tipo de emergencia por id."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM tbtipoemergencia WHERE idTipoEmergencia = %s", (tipo_id,))
         return cursor.fetchone()
     except Error:
         raise
@@ -233,7 +223,7 @@ def get_tipoemergencia(tipo_id):
 
 
 def insert_tipoemergencia(nombre, descripcion, nivel, estado):
-    """Inserta un nuevo tipo de emergencia y devuelve el id insertado."""
+    """Inserta un nuevo tipo de emergencia."""
     conn = None
     cursor = None
     try:
@@ -259,7 +249,7 @@ def insert_tipoemergencia(nombre, descripcion, nivel, estado):
 
 
 def update_tipoemergencia(tipo_id, nombre, descripcion, nivel, estado):
-    """Actualiza un tipo de emergencia. Devuelve el número de filas afectadas."""
+    """Actualiza un tipo de emergencia."""
     conn = None
     cursor = None
     try:
@@ -285,7 +275,7 @@ def update_tipoemergencia(tipo_id, nombre, descripcion, nivel, estado):
 
 
 def delete_tipoemergencia(tipo_id):
-    """Elimina un tipo de emergencia. Devuelve filas afectadas."""
+    """Elimina un tipo de emergencia."""
     conn = None
     cursor = None
     try:
@@ -306,17 +296,14 @@ def delete_tipoemergencia(tipo_id):
 
 
 def get_all_servicioemergencia():
-    """Devuelve todos los registros de `tbservicioemergencia` como lista de dicts."""
+    """Devuelve todos los servicios de emergencia."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idServicioEmergencia, nombreServicioEmergencia, tipoServicioEmergencia, telefonoServicioEmergencia, disponibilidadServicioEmergencia, direccionBaseServicioEmergencia, capacidadAtencionServicioEmergencia, horarioServicioEmergencia, especialidadServicioEmergencia, estadoServicioEmergencia FROM tbservicioemergencia ORDER BY idServicioEmergencia"
-        )
-        rows = cursor.fetchall()
-        return rows
+        cursor.execute("SELECT * FROM tbservicioemergencia")
+        return cursor.fetchall()
     except Error:
         raise
     finally:
@@ -327,16 +314,13 @@ def get_all_servicioemergencia():
 
 
 def get_servicioemergencia(servicio_id):
-    """Devuelve un registro por `idServicioEmergencia` como diccionario o None."""
+    """Devuelve un servicio de emergencia por id."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idServicioEmergencia, nombreServicioEmergencia, tipoServicioEmergencia, telefonoServicioEmergencia, disponibilidadServicioEmergencia, direccionBaseServicioEmergencia, capacidadAtencionServicioEmergencia, horarioServicioEmergencia, especialidadServicioEmergencia, estadoServicioEmergencia FROM tbservicioemergencia WHERE idServicioEmergencia = %s",
-            (servicio_id,)
-        )
+        cursor.execute("SELECT * FROM tbservicioemergencia WHERE idServicioEmergencia = %s", (servicio_id,))
         return cursor.fetchone()
     except Error:
         raise
@@ -348,7 +332,7 @@ def get_servicioemergencia(servicio_id):
 
 
 def insert_servicioemergencia(nombre, tipo, telefono, disponibilidad, direccion, capacidad, horario, especialidad, estado):
-    """Inserta un nuevo servicio de emergencia y devuelve el id insertado."""
+    """Inserta un nuevo servicio de emergencia."""
     conn = None
     cursor = None
     try:
@@ -356,7 +340,7 @@ def insert_servicioemergencia(nombre, tipo, telefono, disponibilidad, direccion,
         cursor = conn.cursor()
         sql = """
         INSERT INTO tbservicioemergencia
-        (nombreServicioEmergencia, tipoServicioEmergencia, telefonoServicioEmergencia, disponibilidadServicioEmergencia, direccionBaseServicioEmergencia, capacidadAtencionServicioEmergencia, horarioServicioEmergencia, especialidadServicioEmergencia, estadoServicioEmergencia)
+        (nombreServicioEmergencia, tipoServicioEmergencia, telefonoServicioEmergencia, disponibilidadServicioEmergencia, direccionServicioEmergencia, capacidadServicioEmergencia, horarioServicioEmergencia, especialidadServicioEmergencia, estadoServicioEmergencia)
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """
         cursor.execute(sql, (nombre, tipo, telefono, disponibilidad, direccion, capacidad, horario, especialidad, estado))
@@ -374,7 +358,7 @@ def insert_servicioemergencia(nombre, tipo, telefono, disponibilidad, direccion,
 
 
 def update_servicioemergencia(servicio_id, nombre, tipo, telefono, disponibilidad, direccion, capacidad, horario, especialidad, estado):
-    """Actualiza un servicio de emergencia. Devuelve el número de filas afectadas."""
+    """Actualiza un servicio de emergencia."""
     conn = None
     cursor = None
     try:
@@ -382,7 +366,7 @@ def update_servicioemergencia(servicio_id, nombre, tipo, telefono, disponibilida
         cursor = conn.cursor()
         sql = """
         UPDATE tbservicioemergencia
-        SET nombreServicioEmergencia=%s, tipoServicioEmergencia=%s, telefonoServicioEmergencia=%s, disponibilidadServicioEmergencia=%s, direccionBaseServicioEmergencia=%s, capacidadAtencionServicioEmergencia=%s, horarioServicioEmergencia=%s, especialidadServicioEmergencia=%s, estadoServicioEmergencia=%s
+        SET nombreServicioEmergencia=%s, tipoServicioEmergencia=%s, telefonoServicioEmergencia=%s, disponibilidadServicioEmergencia=%s, direccionServicioEmergencia=%s, capacidadServicioEmergencia=%s, horarioServicioEmergencia=%s, especialidadServicioEmergencia=%s, estadoServicioEmergencia=%s
         WHERE idServicioEmergencia=%s
         """
         cursor.execute(sql, (nombre, tipo, telefono, disponibilidad, direccion, capacidad, horario, especialidad, estado, servicio_id))
@@ -400,7 +384,7 @@ def update_servicioemergencia(servicio_id, nombre, tipo, telefono, disponibilida
 
 
 def delete_servicioemergencia(servicio_id):
-    """Elimina un servicio de emergencia. Devuelve filas afectadas."""
+    """Elimina un servicio de emergencia."""
     conn = None
     cursor = None
     try:
@@ -420,20 +404,15 @@ def delete_servicioemergencia(servicio_id):
             conn.close()
 
 
-# ======================== CONTACTO DE EMERGENCIA ========================
-
 def get_all_contactoemergencia():
-    """Devuelve todos los registros de `tbcontactoemergencia` como lista de dicts."""
+    """Devuelve todos los contactos de emergencia."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idContactoEmergencia, tbTipoEmergencia_idTipoEmergencia, nombreContactoEmergencia, telefonoContactoEmergencia, tipoContactoEmergencia, descripcionContactoEmergencia, estadoContactoEmergencia FROM tbcontactoemergencia ORDER BY idContactoEmergencia"
-        )
-        rows = cursor.fetchall()
-        return rows
+        cursor.execute("SELECT * FROM tbcontactoemergencia")
+        return cursor.fetchall()
     except Error:
         raise
     finally:
@@ -444,16 +423,13 @@ def get_all_contactoemergencia():
 
 
 def get_contactoemergencia(contacto_id):
-    """Devuelve un registro por `idContactoEmergencia` como diccionario o None."""
+    """Devuelve un contacto de emergencia por id."""
     conn = None
     cursor = None
     try:
         conn = get_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idContactoEmergencia, tbTipoEmergencia_idTipoEmergencia, nombreContactoEmergencia, telefonoContactoEmergencia, tipoContactoEmergencia, descripcionContactoEmergencia, estadoContactoEmergencia FROM tbcontactoemergencia WHERE idContactoEmergencia = %s",
-            (contacto_id,)
-        )
+        cursor.execute("SELECT * FROM tbcontactoemergencia WHERE idContactoEmergencia = %s", (contacto_id,))
         return cursor.fetchone()
     except Error:
         raise
@@ -465,7 +441,7 @@ def get_contactoemergencia(contacto_id):
 
 
 def insert_contactoemergencia(tipo_id, nombre, telefono, tipo, descripcion, estado):
-    """Inserta un nuevo contacto de emergencia y devuelve el id insertado."""
+    """Inserta un nuevo contacto de emergencia."""
     conn = None
     cursor = None
     try:
@@ -491,7 +467,7 @@ def insert_contactoemergencia(tipo_id, nombre, telefono, tipo, descripcion, esta
 
 
 def update_contactoemergencia(contacto_id, tipo_id, nombre, telefono, tipo, descripcion, estado):
-    """Actualiza un contacto de emergencia. Devuelve el número de filas afectadas."""
+    """Actualiza un contacto de emergencia."""
     conn = None
     cursor = None
     try:
@@ -517,7 +493,7 @@ def update_contactoemergencia(contacto_id, tipo_id, nombre, telefono, tipo, desc
 
 
 def delete_contactoemergencia(contacto_id):
-    """Elimina un contacto de emergencia. Devuelve filas afectadas."""
+    """Elimina un contacto de emergencia."""
     conn = None
     cursor = None
     try:
@@ -536,8 +512,6 @@ def delete_contactoemergencia(contacto_id):
         if conn and conn.is_connected():
             conn.close()
 
-
-# ======================== EMERGENCIAS ========================
 
 def get_all_emergencia():
     """Devuelve todos los registros de `tbemergencia` como lista de dicts."""
@@ -756,120 +730,6 @@ def delete_historialestados(historial_id):
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute("DELETE FROM tbhistorialestados WHERE idHistorialEstados = %s", (historial_id,))
-        conn.commit()
-        return cursor.rowcount
-    except Error:
-        if conn:
-            conn.rollback()
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-# CRUD para tbdespacho
-def get_all_despacho():
-    """Devuelve todos los registros de despachos."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idDespacho, tbServicioEmergencia_idServicioEmergencia, tbEmergencia_idEmergencia, idServicio, horaAsignacionDespacho, horaLlegadaDespacho, horaFinalizacionDespacho, estadoDespacho, observacionesDespacho, tiempoRespuestaDespacho, calificacionDespacho FROM tbdespacho ORDER BY horaAsignacionDespacho DESC"
-        )
-        return cursor.fetchall()
-    except Error:
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
-def get_despacho(despacho_id):
-    """Devuelve un registro de despacho por id."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute(
-            "SELECT idDespacho, tbServicioEmergencia_idServicioEmergencia, tbEmergencia_idEmergencia, idServicio, horaAsignacionDespacho, horaLlegadaDespacho, horaFinalizacionDespacho, estadoDespacho, observacionesDespacho, tiempoRespuestaDespacho, calificacionDespacho FROM tbdespacho WHERE idDespacho = %s",
-            (despacho_id,)
-        )
-        return cursor.fetchone()
-    except Error:
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
-def insert_despacho(servicio_id, emergencia_id, id_servicio, hora_asignacion, hora_llegada, hora_finalizacion, estado, observaciones, tiempo_respuesta, calificacion):
-    """Inserta un nuevo registro de despacho."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        sql = """
-        INSERT INTO tbdespacho
-        (tbServicioEmergencia_idServicioEmergencia, tbEmergencia_idEmergencia, idServicio, horaAsignacionDespacho, horaLlegadaDespacho, horaFinalizacionDespacho, estadoDespacho, observacionesDespacho, tiempoRespuestaDespacho, calificacionDespacho)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """
-        cursor.execute(sql, (servicio_id, emergencia_id, id_servicio, hora_asignacion, hora_llegada, hora_finalizacion, estado, observaciones, tiempo_respuesta, calificacion))
-        conn.commit()
-        return cursor.lastrowid
-    except Error:
-        if conn:
-            conn.rollback()
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
-def update_despacho(despacho_id, servicio_id, emergencia_id, id_servicio, hora_asignacion, hora_llegada, hora_finalizacion, estado, observaciones, tiempo_respuesta, calificacion):
-    """Actualiza un registro de despacho."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        sql = """
-        UPDATE tbdespacho
-        SET tbServicioEmergencia_idServicioEmergencia=%s, tbEmergencia_idEmergencia=%s, idServicio=%s, horaAsignacionDespacho=%s, horaLlegadaDespacho=%s, horaFinalizacionDespacho=%s, estadoDespacho=%s, observacionesDespacho=%s, tiempoRespuestaDespacho=%s, calificacionDespacho=%s
-        WHERE idDespacho=%s
-        """
-        cursor.execute(sql, (servicio_id, emergencia_id, id_servicio, hora_asignacion, hora_llegada, hora_finalizacion, estado, observaciones, tiempo_respuesta, calificacion, despacho_id))
-        conn.commit()
-        return cursor.rowcount
-    except Error:
-        if conn:
-            conn.rollback()
-        raise
-    finally:
-        if cursor:
-            cursor.close()
-        if conn and conn.is_connected():
-            conn.close()
-
-
-def delete_despacho(despacho_id):
-    """Elimina un registro de despacho."""
-    conn = None
-    cursor = None
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM tbdespacho WHERE idDespacho = %s", (despacho_id,))
         conn.commit()
         return cursor.rowcount
     except Error:

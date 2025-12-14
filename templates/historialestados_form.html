@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Formulario Historial de Estados</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      label { display:block; margin-top:8px; }
+      input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
+      .actions { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>{% if historial and historial.idHistorialEstados %}Editar Historial{% else %}Nuevo Registro Historial{% endif %}</h1>
+
+    <form method="post">
+      <label>Emergencia</label>
+      <select name="tbEmergencia_idEmergencia" required>
+        <option value="">--Seleccione emergencia--</option>
+        {% for e in emergencias %}
+        <option value="{{ e.idEmergencia }}" {% if historial and historial.tbEmergencia_idEmergencia == e.idEmergencia %}selected{% endif %}>Emergencia #{{ e.idEmergencia }} (Estado: {{ e.estadoEmergencia }})</option>
+        {% endfor %}
+      </select>
+
+      <label>Usuario</label>
+      <select name="tbUsuario_idUsuario" required>
+        <option value="">--Seleccione usuario--</option>
+        {% for u in usuarios %}
+        <option value="{{ u.idUsuario }}" {% if historial and historial.tbUsuario_idUsuario == u.idUsuario %}selected{% endif %}>{{ u.nombresApellidosUsuario }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Estado Anterior</label>
+      <input name="estadoAnterior" value="{{ historial.estadoAnterior if historial else '' }}">
+
+      <label>Estado Nuevo</label>
+      <select name="estadoNuevo" required>
+        {% set est = historial.estadoNuevo if historial else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="reportada" {{ 'selected' if est=='reportada' else '' }}>reportada</option>
+        <option value="en_proceso" {{ 'selected' if est=='en_proceso' else '' }}>en_proceso</option>
+        <option value="atendida" {{ 'selected' if est=='atendida' else '' }}>atendida</option>
+        <option value="cerrada" {{ 'selected' if est=='cerrada' else '' }}>cerrada</option>
+      </select>
+
+      <label>Fecha Cambio</label>
+      <input name="fechaCambioHistorialEstados" type="datetime-local" value="{{ historial.fechaCambioHistorialEstados if historial else '' }}" required>
+
+      <label>Usuario Cambio (ID)</label>
+      <input name="usuarioCambioHistorialEstados" type="number" value="{{ historial.usuarioCambioHistorialEstados if historial else '' }}">
+
+      <label>Motivo</label>
+      <textarea name="motivoHistorialEstados">{{ historial.motivoHistorialEstados if historial else '' }}</textarea>
+
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <a href="/historialestados">Cancelar</a>
+      </div>
+    </form>
+
+  </body>
+</html>

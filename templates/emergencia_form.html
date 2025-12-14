@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Formulario Emergencia</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      label { display:block; margin-top:8px; }
+      input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
+      .actions { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>{% if emergencia and emergencia.idEmergencia %}Editar Emergencia{% else %}Nueva Emergencia{% endif %}</h1>
+
+    <form method="post">
+      <label>Usuario</label>
+      <select name="tbUsuario_idUsuario" required>
+        <option value="">--Seleccione usuario--</option>
+        {% for u in usuarios %}
+        <option value="{{ u.idUsuario }}" {% if emergencia and emergencia.tbUsuario_idUsuario == u.idUsuario %}selected{% endif %}>{{ u.nombresApellidosUsuario }}</option>
+        {% endfor %}
+      </select>
+
+      <label>Tipo Emergencia</label>
+      <select name="tbTipoEmergencia_idTipoEmergencia" required>
+        <option value="">--Seleccione tipo--</option>
+        {% for t in tipos %}
+        <option value="{{ t.idTipoEmergencia }}" {% if emergencia and emergencia.tbTipoEmergencia_idTipoEmergencia == t.idTipoEmergencia %}selected{% endif %}>{{ t.nombreTipoEmergencia }}</option>
+        {% endfor %}
+      </select>
+
+
+
+      <label>Código</label>
+      <input name="codigoEmergencia" type="number" value="{{ emergencia.codigoEmergencia if emergencia else '' }}" required>
+
+      <label>Fecha Hora</label>
+      <input name="fechaHoraEmergencia" type="datetime-local" value="{{ emergencia.fechaHoraEmergencia if emergencia else '' }}" required>
+
+      <label>Estado</label>
+      <select name="estadoEmergencia" required>
+        {% set est = emergencia.estadoEmergencia if emergencia else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="reportada" {{ 'selected' if est=='reportada' else '' }}>reportada</option>
+        <option value="en_proceso" {{ 'selected' if est=='en_proceso' else '' }}>en_proceso</option>
+        <option value="atendida" {{ 'selected' if est=='atendida' else '' }}>atendida</option>
+        <option value="cerrada" {{ 'selected' if est=='cerrada' else '' }}>cerrada</option>
+      </select>
+      <label>Ubicación</label>
+      <input name="ubicacionEmergencia" value="{{ emergencia.ubicacionEmergencia if emergencia else '' }}">
+
+      <label>Latitud</label>
+      <input name="latitudEmergencia" value="{{ emergencia.latitudEmergencia if emergencia else '' }}">
+
+      <label>Longitud</label>
+      <input name="longitudEmergencia" value="{{ emergencia.longitudEmergencia if emergencia else '' }}">
+
+      <label>Descripción</label>
+      <textarea name="descripcionEmergencia">{{ emergencia.descripcionEmergencia if emergencia else '' }}</textarea>
+
+
+
+      <label>Prioridad</label>
+      <select name="prioridadEmergencia">
+        {% set pri = emergencia.prioridadEmergencia if emergencia else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="baja" {{ 'selected' if pri=='baja' else '' }}>baja</option>
+        <option value="media" {{ 'selected' if pri=='media' else '' }}>media</option>
+        <option value="alta" {{ 'selected' if pri=='alta' else '' }}>alta</option>
+        <option value="critica" {{ 'selected' if pri=='critica' else '' }}>critica</option>
+      </select>
+
+      <label>Usuario que Reporta</label>
+      <select name="idusuarioreportaEmergencia">
+        <option value="">--Seleccione usuario--</option>
+        {% for u in usuarios %}
+        <option value="{{ u.idUsuario }}" {% if emergencia and emergencia.idusuarioreportaEmergencia == u.idUsuario %}selected{% endif %}>{{ u.nombresApellidosUsuario }}</option>
+        {% endfor %}
+      </select>
+      <label>Fecha Cierre</label>
+      <input name="fechaCierreEmergencia" value="{{ emergencia.fechaCierreEmergencia if emergencia else '' }}">
+
+      <label>Observaciones</label>
+      <textarea name="observacionesEmergencia">{{ emergencia.observacionesEmergencia if emergencia else '' }}</textarea>
+
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <a href="/emergencias">Cancelar</a>
+      </div>
+    </form>
+
+  </body>
+</html>

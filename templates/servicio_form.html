@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if servicio %}Editar{% else %}Nuevo{% endif %} Servicio</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      label { display: block; margin-top: 8px; }
+      input, textarea, select { width: 400px; padding: 6px; }
++      textarea { height: 80px; }
+      .actions { margin-top: 12px; }
+    </style>
+  </head>
+  <body>
+    <h1>{% if servicio %}Editar{% else %}Nuevo{% endif %} Servicio de Emergencia</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if servicio %}
+      <form method="post" action="/servicios/editar/{{ servicio.idServicioEmergencia }}">
+    {% else %}
+      <form method="post" action="/servicios/nuevo">
+    {% endif %}
+
+      <label for="nombre">Nombre</label>
+      <input id="nombre" name="nombre" required value="{{ servicio.nombreServicioEmergencia if servicio }}">
+
+      <label for="tipo">Tipo</label>
+      <select id="tipo" name="tipo" required>
+        {% set sel = servicio.tipoServicioEmergencia if servicio else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="bomberos" {{ 'selected' if sel=='bomberos' else '' }}>bomberos</option>
+        <option value="policia" {{ 'selected' if sel=='policia' else '' }}>policia</option>
+        <option value="ambulancia" {{ 'selected' if sel=='ambulancia' else '' }}>ambulancia</option>
+        <option value="cruz_roja" {{ 'selected' if sel=='cruz_roja' else '' }}>cruz_roja</option>
+        <option value="defensa_civil" {{ 'selected' if sel=='defensa_civil' else '' }}>defensa_civil</option>
+      </select>
+
+      <label for="telefono">Teléfono</label>
+      <input id="telefono" name="telefono" value="{{ servicio.telefonoServicioEmergencia if servicio }}">
+
+      <label for="disponibilidad">Disponibilidad</label>
+      <select id="disponibilidad" name="disponibilidad">
+        {% set d = servicio.disponibilidadServicioEmergencia if servicio else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="disponible" {{ 'selected' if d=='disponible' else '' }}>disponible</option>
+        <option value="ocupado" {{ 'selected' if d=='ocupado' else '' }}>ocupado</option>
+        <option value="fuera_servicio" {{ 'selected' if d=='fuera_servicio' else '' }}>fuera_servicio</option>
+      </select>
+
+      <label for="direccion">Dirección base</label>
+      <input id="direccion" name="direccion" value="{{ servicio.direccionBaseServicioEmergencia if servicio }}">
+
+      <label for="capacidad">Capacidad de atención</label>
+      <input id="capacidad" name="capacidad" type="number" value="{{ servicio.capacidadAtencionServicioEmergencia if servicio }}">
+
+      <label for="horario">Horario</label>
+      <input id="horario" name="horario" value="{{ servicio.horarioServicioEmergencia if servicio }}">
+
+      <label for="especialidad">Especialidad</label>
+      <input id="especialidad" name="especialidad" value="{{ servicio.especialidadServicioEmergencia if servicio }}">
+
+      <label for="estado">Estado</label>
+      <select id="estado" name="estado" required>
+        {% set s = servicio.estadoServicioEmergencia if servicio else '' %}
+        <option value="">--Seleccione--</option>
+        <option value="activo" {{ 'selected' if s=='activo' else '' }}>activo</option>
+        <option value="inactivo" {{ 'selected' if s=='inactivo' else '' }}>inactivo</option>
+      </select>
+
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <a href="/servicios">Cancelar</a>
+      </div>
+    </form>
+
+  </body>
+</html>

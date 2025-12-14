@@ -12,7 +12,7 @@
     </style>
   </head>
   <body>
-    <h1>Nuevo Usuario</h1>
+    <h1>{% if user %}Editar{% else %}Nuevo{% endif %} Usuario</h1>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -22,18 +22,43 @@
       {% endif %}
     {% endwith %}
 
-    <form method="post" action="/usuarios/nuevo">
-      <label for="nombre">Nombre</label>
-      <input id="nombre" name="nombre" required>
+
+
+
+    {% if user %}
+      <form method="post" action="/usuarios/editar/{{ user.idUsuario }}">
+    {% else %}
+      <form method="post" action="/usuarios/nuevo">
+    {% endif %}
+      <label for="cedula">Cédula</label>
+      <input id="cedula" name="cedula" value="{{ user.cedulaUsuario if user else '' }}">
+
+      <label for="nombre">Nombre Completo</label>
+      <input id="nombre" name="nombre" value="{{ user.nombresApellidosUsuario if user else '' }}" required>
 
       <label for="email">Correo</label>
-      <input id="email" name="email" type="email" required>
+      <input id="email" name="email" type="email" value="{{ user.emailUsuario if user else '' }}" required>
 
       <label for="telefono">Teléfono</label>
-      <input id="telefono" name="telefono">
+      <input id="telefono" name="telefono" value="{{ user.telefonoUsuario if user else '' }}">
 
+      <label for="contacto">Contacto de Emergencia</label>
+      <input id="contacto" name="contacto" value="{{ user.contactoEmergenciaUsuario if user else '' }}">
+
+      <label for="tipo">Tipo de Usuario</label>
+      <input id="tipo" name="tipo" value="{{ user.tipoUsuario if user else '' }}">
+
+      <label for="direccion">Dirección</label>
+      <input id="direccion" name="direccion" value="{{ user.direccionUsuario if user else '' }}">
+
+      <label for="estado">Estado</label>
+      <select id="estado" name="estado">
+        {% set est = user.estadoUsuario if user else 'activo' %}
+        <option value="activo" {{ 'selected' if est=='activo' else '' }}>activo</option>
+        <option value="inactivo" {{ 'selected' if est=='inactivo' else '' }}>inactivo</option>
+      </select>
       <div class="actions">
-        <button type="submit">Crear usuario</button>
+        <button type="submit">{% if user %}Actualizar{% else %}Crear{% endif %} usuario</button>
         <a href="/usuarios">Cancelar</a>
       </div>
     </form>
