@@ -2,22 +2,36 @@
 
 Descripción
 -----------
-Aplicación web mínima en Python/Flask para gestionar usuarios y tipos de emergencia contra una base de datos MySQL.
+Aplicación web responsive en Python/Flask para solicitar y gestionar emergencias con una base de datos MySQL. Incluye pantalla inicial intuitiva, sistema de login/registro y solicitud de ayuda en tiempo real.
+
+Características Principales
+---------------------------
+✅ **Pantalla Inicial** - Interfaz moderna y responsive con botón rojo "Solicitar Ayuda"
+✅ **Sistema de Login/Registro** - Autenticación segura con contraseñas hasheadas
+✅ **Solicitud de Emergencia** - Selecciona tipo de servicio y completa formulario con ubicación
+✅ **Historial de Solicitudes** - Visualiza el historial de emergencias reportadas
+✅ **Diseño Responsive** - Optimizado para móviles, tablets y desktop
+✅ **Panel Admin** - Gestión completa de todos los registros (CRUD)
+✅ **Geolocalización** - Obtén automáticamente tu ubicación GPS
 
 Estructura del proyecto
 -----------------------
-- `app.py` : Aplicación Flask con rutas para `usuarios` y `tbtipoemergencia` (CRUD básico).
-- `db.py` : Módulo con la lógica de conexión a MySQL (`get_connection`) y funciones de acceso a datos (usuarios y tipos).
-- `test_conection.py` : script de prueba de conexión (original).
-- `templates/` : Plantillas HTML:
-  - `usuarios_list.html`, `usuario_form.html` — listado y formulario de usuarios.
-  - `tipo_list.html`, `tipo_form.html` — listado y formulario para `tbtipoemergencia`.
+- `app.py` : Aplicación Flask con todas las rutas (CRUD, login, solicitudes).
+- `db.py` : Módulo con funciones de base de datos y autenticación.
+- `test_conection.py` : Script de prueba de conexión (original).
+- `schema.sql` : Esquema completo de la base de datos.
+- `templates/` : Plantillas HTML (responsive):
+  - **Públicas**: `index.html`, `login.html`, `registro.html`, `solicitar_ayuda.html`, `formulario_ayuda.html`
+  - **Admin**: `usuarios_list.html`, `usuario_form.html`, `tipo_list.html`, `tipo_form.html`, `servicio_list.html`, `servicio_form.html`, `contacto_list.html`, `contacto_form.html`, `emergencia_list.html`, `emergencia_form.html`, `historialestados_list.html`, `historialestados_form.html`, `despacho_list.html`, `despacho_form.html`, `admin.html`
 
 Arquitectura y decisiones
 -------------------------
-- Micro aplicación Flask (un solo proceso) para desarrollo y pruebas.
-- Acceso a datos mediante `mysql-connector-python` y SQL parametrizado — no se usa ORM por ahora.
-- Separación de responsabilidades: `app.py` (rutas y vistas) y `db.py` (conexión + queries).
+- Aplicación Flask con separación MVC-light.
+- Acceso a datos mediante `mysql-connector-python` con SQL parametrizado.
+- Separación: `app.py` (rutas/vistas) ↔ `db.py` (conexión + CRUD).
+- Autenticación con hashing PBKDF2-SHA256 y salting.
+- Interfaz responsive con Bootstrap 5 e iconos FontAwesome 6.
+- Manejo de sesiones para usuarios autenticados.
 - Manejo simple de errores con `flash` en vistas y excepciones propagadas desde `db.py`.
 - `insert_user` invoca `ensure_auto_increment(4)` para asegurar que `tbusuario` tenga AUTO_INCREMENT >= 4 antes de insertar (requiere permisos `ALTER TABLE`).
 
@@ -214,6 +228,83 @@ Endpoints disponibles
   - `POST /despacho/eliminar/<id>` — eliminar.
 - Admin
   - `GET /admin` — panel central con enlaces a todos los CRUDs.
+- Autenticación y Solicitudes
+  - `GET /` — página inicial (índice).
+  - `GET /login` — formulario de login.
+  - `POST /login` — autenticar usuario.
+  - `GET /registro` — formulario de registro.
+  - `POST /registro` — crear nueva cuenta.
+  - `POST /logout` — cerrar sesión.
+  - `GET /solicitar-ayuda` — seleccionar tipo de emergencia.
+  - `GET /formulario-ayuda/<id_servicio>` — formulario de solicitud.
+  - `POST /formulario-ayuda/<id_servicio>` — enviar solicitud.
+
+Cómo Usar la Aplicación
+-----------------------
+### Flujo de Usuario Normal (Sin Cuenta)
+1. Accede a http://127.0.0.1:5000/ (Página Inicial)
+2. Haz clic en el botón rojo **"SOLICITAR AYUDA"**
+3. Selecciona el tipo de emergencia que necesitas
+4. Completa el formulario con:
+   - **Nombre**: Tu nombre completo
+   - **Teléfono**: Tu número de contacto
+   - **Ubicación**: Tu dirección o haz clic en "Obtener Ubicación" para GPS
+   - **Grupo Sanguíneo**: Selecciona tu tipo de sangre
+   - **Descripción** (opcional): Detalles adicionales de la emergencia
+5. Haz clic en **"ENVIAR SOLICITUD"**
+6. El sistema notificará a los servicios de emergencia disponibles
+
+### Crear Cuenta
+1. En la página inicial, haz clic en **"Registrarse"** o ve a http://127.0.0.1:5000/registro
+2. Completa el formulario con:
+   - Cédula
+   - Nombres y Apellidos
+   - Correo electrónico
+   - Teléfono
+   - Dirección
+   - Contraseña (mínimo 6 caracteres)
+3. Haz clic en **"CREAR CUENTA"**
+4. Serás redirigido a la página de login para iniciar sesión
+
+### Iniciar Sesión
+1. Haz clic en **"Iniciar Sesión"** en la página inicial o ve a http://127.0.0.1:5000/login
+2. Ingresa tu correo y contraseña
+3. Haz clic en **"INICIAR SESIÓN"**
+4. Verás tu historial de solicitudes en la página inicial
+
+### Panel Admin (Gestión)
+1. Ve a http://127.0.0.1:5000/admin
+2. Desde aquí puedes:
+   - Gestionar usuarios
+   - Gestionar tipos de emergencia
+   - Gestionar servicios de emergencia
+   - Gestionar contactos de emergencia
+   - Gestionar emergencias reportadas
+   - Gestionar historial de estados
+   - Gestionar despachos
+
+Seguridad
+---------
+- ✅ Contraseñas hasheadas con PBKDF2-SHA256 + salting
+- ✅ SQL parametrizado (previene inyección SQL)
+- ✅ Sesiones Flask con secret_key segura
+- ✅ Validaciones en cliente y servidor
+- ⚠️ Para producción: usar HTTPS, validador CSRF, y variables de entorno seguros
+
+Requisitos Técnicos
+-------------------
+- Python 3.8+
+- Flask 3.1.2
+- mysql-connector-python 8.0+
+- MySQL 5.7+
+
+Próximos Pasos Recomendados
+---------------------------
+- Implementar notificaciones en tiempo real (WebSocket)
+- Agregar mapa interactivo de ubicación
+- Sistema de calificación de servicios
+- Reportes y estadísticas de emergencias
+- Integración con SMS/WhatsApp para alertas
 
 Próximos pasos recomendados
 ---------------------------

@@ -2,7 +2,7 @@ import os
 import sys
 from datetime import datetime
 try:
-	from flask import Flask, render_template, request, redirect, url_for, flash
+	from flask import Flask, render_template, request, redirect, url_for, flash, session
 except ImportError:
 	sys.stderr.write("Module 'flask' not found.\n")
 	sys.stderr.write("Start the app using the project's virtualenv or install dependencies.\n")
@@ -47,6 +47,10 @@ from db import (
     insert_despacho,
     update_despacho,
     delete_despacho,
+    register_user,
+    authenticate_user,
+    get_user_by_id,
+    get_emergencias_historial,
 )
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET', 'dev-secret')
@@ -54,7 +58,19 @@ app.secret_key = os.getenv('FLASK_SECRET', 'dev-secret')
 
 @app.route('/')
 def index():
-	return redirect(url_for('tipos'))
+	try:
+		current_user = None
+		historial = []
+		
+		if 'user_id' in session:
+			user_id = session['user_id']
+			current_user = get_user_by_id(user_id)
+			historial = get_emergencias_historial(user_id, limit=5)
+		
+		return render_template('index.html', current_user=current_user, historial=historial)
+	except Exception as e:
+		flash(f"Error: {e}", 'danger')
+		return render_template('index.html', current_user=None, historial=[])
 
 
 @app.route('/tipos')
@@ -724,6 +740,128 @@ def eliminar_despacho(despacho_id):
 	except Exception as e:
 		flash(f'Error al eliminar despacho: {e}', 'danger')
 	return redirect(url_for('despacho'))
+
+
+# ==================== RUTAS DE USUARIO - LOGIN Y REGISTRO ====================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+	if request.method == 'POST':
+		email = request.form.get('email')
+		password = request.form.get('password')
+		
+		try:
+			user = authenticate_user(email, password)
+			if user:
+				session['user_id'] = user['idUsuario']
+				session['user_name'] = user['nombresApellidosUsuario']
+				flash(f"¡Bienvenido, {user['nombresApellidosUsuario']}!", 'success')
+				return redirect(url_for('index'))
+			else:
+				flash('Correo o contraseña incorrectos.', 'danger')
+		except Exception as e:
+			flash(f'Error en el login: {e}', 'danger')
+	
+	return render_template('login.html')
+
+
+@app.route('/registro', methods=['GET', 'POST'])
+def registro():
+	if request.method == 'POST':
+		cedula = request.form.get('cedula')
+		nombres_apellidos = request.form.get('nombres_apellidos')
+		email = request.form.get('email')
+		telefono = request.form.get('telefono')
+		direccion = request.form.get('direccion')
+		password = request.form.get('password')
+		confirm_password = request.form.get('confirm_password')
+		
+		if password != confirm_password:
+			flash('Las contraseñas no coinciden.', 'danger')
+			return render_template('registro.html')
+		
+		try:
+			user_id = register_user(cedula, nombres_apellidos, email, telefono, direccion, password)
+			flash('¡Cuenta creada correctamente! Ahora puedes iniciar sesión.', 'success')
+			return redirect(url_for('login'))
+		except ValueError as e:
+			flash(f'Error: {e}', 'danger')
+		except Exception as e:
+			flash(f'Error al registrar usuario: {e}', 'danger')
+	
+	return render_template('registro.html')
+
+
+@app.route('/logout', methods=['POST'])
+def logout():
+	session.clear()
+	flash('Has cerrado sesión correctamente.', 'info')
+	return redirect(url_for('index'))
+
+
+# ==================== RUTAS DE SOLICITUD DE AYUDA ====================
+
+@app.route('/solicitar-ayuda')
+def solicitar_ayuda():
+	try:
+		servicios = get_all_servicioemergencia()
+		return render_template('solicitar_ayuda.html', servicios=servicios)
+	except Exception as e:
+		flash(f'Error al obtener servicios: {e}', 'danger')
+		return redirect(url_for('index'))
+
+
+@app.route('/formulario-ayuda/<int:servicio_id>', methods=['GET', 'POST'])
+def formulario_ayuda(servicio_id):
+	try:
+		servicio = get_servicioemergencia(servicio_id)
+		
+		if not servicio:
+			flash('Servicio no encontrado.', 'danger')
+			return redirect(url_for('solicitar_ayuda'))
+		
+		if request.method == 'POST':
+			nombre = request.form.get('nombre')
+			telefono = request.form.get('telefono')
+			ubicacion = request.form.get('ubicacion')
+			grupo_sanguineo = request.form.get('grupo_sanguineo')
+			descripcion = request.form.get('descripcion', '')
+			
+			try:
+				# Obtener o crear usuario anónimo
+				user_id = None
+				if 'user_id' in session:
+					user_id = session['user_id']
+				
+				# Crear emergencia
+				tipo_emergencia_id = servicio['idServicioEmergencia']
+				emergencia_id = insert_emergencia(
+					user_id=user_id or 1,
+					tipo_emergencia_id=tipo_emergencia_id,
+					codigo_emergencia=None,
+					fecha_hora=datetime.now(),
+					tipo_emergencia=None,
+					estado='reportada',
+					ubicacion=ubicacion,
+					latitud=None,
+					longitud=None,
+					descripcion=f"Solicitud: {descripcion}\nContacto: {nombre} ({telefono})\nGrupo Sanguíneo: {grupo_sanguineo}",
+					prioridad='media',
+					usuario_reporta=user_id or 1,
+					fecha_cierre=None,
+					observaciones=f"Solicitante: {nombre}\nTeléfono: {telefono}\nGrupo Sanguíneo: {grupo_sanguineo}"
+				)
+				
+				flash('¡Solicitud de ayuda enviada correctamente! Los servicios de emergencia han sido notificados.', 'success')
+				return redirect(url_for('index'))
+			except Exception as e:
+				flash(f'Error al enviar solicitud: {e}', 'danger')
+		
+		return render_template('formulario_ayuda.html', servicio=servicio)
+	except Exception as e:
+		flash(f'Error: {e}', 'danger')
+		return redirect(url_for('solicitar_ayuda'))
+
 
 if __name__ == '__main__':
 	app.run(debug=True, port=5000)

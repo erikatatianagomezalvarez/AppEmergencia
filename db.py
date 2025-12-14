@@ -1,5 +1,7 @@
 import os
 from datetime import datetime
+import hashlib
+import secrets
 
 import mysql.connector
 from mysql.connector import Error
@@ -875,6 +877,160 @@ def delete_despacho(despacho_id):
     except Error:
         if conn:
             conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+# FUNCIONES DE AUTENTICACIÓN
+def hash_password(password):
+    """Genera un hash seguro de una contraseña."""
+    salt = secrets.token_hex(32)
+    pwd_hash = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+    return f"{salt}${pwd_hash.hex()}"
+
+
+def verify_password(password, hash_password_stored):
+    """Verifica si una contraseña coincide con su hash."""
+    try:
+        salt, pwd_hash = hash_password_stored.split('$')
+        pwd_hash_attempt = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+        return pwd_hash_attempt.hex() == pwd_hash
+    except:
+        return False
+
+
+def user_exists_by_email(email):
+    """Verifica si un usuario ya existe por email."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT idUsuario FROM tbusuario WHERE emailUsuario = %s", (email,))
+        result = cursor.fetchone()
+        return result is not None
+    except Error:
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+def register_user(cedula, nombres_apellidos, email, telefono, direccion, password):
+    """Registra un nuevo usuario en el sistema."""
+    conn = None
+    cursor = None
+    try:
+        # Verificar si el usuario ya existe
+        if user_exists_by_email(email):
+            raise ValueError("El correo electrónico ya está registrado")
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        # Hashear la contraseña
+        password_hash = hash_password(password)
+        
+        sql = """
+        INSERT INTO tbusuario
+        (cedulaUsuario, nombresApellidosUsuario, emailUsuario, telefonoUsuario, direccionUsuario, estadoUsuario, fechaRegistroUsuario, tipoUsuario)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        
+        cursor.execute(sql, (cedula, nombres_apellidos, email, telefono, direccion, 'activo', datetime.now(), f'cliente|{password_hash}'))
+        conn.commit()
+        return cursor.lastrowid
+    except ValueError:
+        raise
+    except Error:
+        if conn:
+            conn.rollback()
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+def authenticate_user(email, password):
+    """Autentica un usuario y retorna sus datos si son válidos."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT idUsuario, nombresApellidosUsuario, emailUsuario, tipoUsuario FROM tbusuario WHERE emailUsuario = %s", (email,))
+        user = cursor.fetchone()
+        
+        if user:
+            # Obtener la contraseña hasheada desde tipoUsuario (formato: role|hash)
+            cursor.execute("SELECT tipoUsuario FROM tbusuario WHERE idUsuario = %s", (user['idUsuario'],))
+            result = cursor.fetchone()
+            tipo_usuario = result['tipoUsuario']
+            
+            if '|' in tipo_usuario:
+                role, password_hash = tipo_usuario.split('|', 1)
+                if verify_password(password, password_hash):
+                    return user
+        
+        return None
+    except Error:
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+def get_user_by_id(user_id):
+    """Obtiene los datos de un usuario por su ID."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT idUsuario, nombresApellidosUsuario, emailUsuario, telefonoUsuario, direccionUsuario, cedulaUsuario FROM tbusuario WHERE idUsuario = %s", (user_id,))
+        return cursor.fetchone()
+    except Error:
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if conn and conn.is_connected():
+            conn.close()
+
+
+def get_emergencias_historial(user_id, limit=10):
+    """Obtiene el historial de emergencias de un usuario."""
+    conn = None
+    cursor = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute(
+            """
+            SELECT 
+                e.idEmergencia,
+                s.nombreServicioEmergencia,
+                e.fechaHoraEmergencia as fechaEmergencia,
+                e.estadoEmergencia as estado
+            FROM tbemergencia e
+            JOIN tbservicioemergencia s ON e.tbTipoEmergencia_idTipoEmergencia = s.idServicioEmergencia
+            WHERE e.tbUsuario_idUsuario = %s
+            ORDER BY e.fechaHoraEmergencia DESC
+            LIMIT %s
+            """,
+            (user_id, limit)
+        )
+        return cursor.fetchall()
+    except Error:
         raise
     finally:
         if cursor:
